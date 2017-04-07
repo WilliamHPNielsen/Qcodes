@@ -22,14 +22,12 @@ class ArrayMeasurement(ArrayParameter):
         super().__init__(name, shape=shape, *args, **kwargs)
 
         self.label = ''
-        self.unit = ''
+        self.unit = 'V'  #TODO (WilliamHPNielsen) change according to settings
         self.properly_prepared = False
 
     def prepare(self):
         """
         Prepare the measurement, create the setpoints.
-
-        There is some randomness in the measurement times.
         """
 
         inst = self._instrument
@@ -54,8 +52,25 @@ class ArrayMeasurement(ArrayParameter):
 
         self.setpoints = (tuple(np.linspace(0, N*self.time_per_point, N)),)
         self.shape = (N,)
+        self.setpoint_names = ('DMM_time',)
+        self.setpoint_units = ('s',)
+        self.setpoint_labels = ('DMM acq. time',)
 
         self.properly_prepared = True
+
+
+    def arm(self):
+        """
+        Arm the trigger for acquisition. A trigger event MUST follow before
+        a VISA timeout error is raised.
+        """
+        # Now the instrument is armed and awaiting a trigger.
+
+        # Turn off the display to increase measurement speed
+        N = self._instrument.sample_count()
+        self._instrument.display_text('Armed to acquire {} samples'.format(N))
+        self._instrument.init_measurement()
+
 
     def get(self):
 
@@ -72,10 +87,7 @@ class ArrayMeasurement(ArrayParameter):
         self._instrument.visa_handle.timeout = N*1000*1.2*self.time_per_point
         self._instrument.visa_handle.timeout += old_timeout
 
-        # Turn off the display to increase measurement speed
-        self._instrument.display_text('Acquiring {} samples'.format(N))
 
-        self._instrument.init_measurement()
         try:
             rawvals = self._instrument.ask('FETCH?')
         except VisaIOError:
@@ -186,6 +198,13 @@ class Keysight_34465A(VisaInstrument):
         self._apt_times = apt_times[self.model]
 
         ####################################
+        # Parsers
+
+        def _error_parser(emsg):
+            code, mssg = emsg.split(',')
+            return (int(code), mssg.replace('"', ''))
+
+        ####################################
         # PARAMETERS
 
         self.add_parameter('NPLC',
@@ -195,6 +214,11 @@ class Keysight_34465A(VisaInstrument):
                            vals=vals.Enum(*self.NPLC_list),
                            label='Integration time',
                            unit='NPLC')
+
+        self.add_parameter('error',
+                           label='Error (code, message)',
+                           get_cmd='SYSTem:ERRor?',
+                           get_parser=_error_parser)
 
         self.add_parameter('volt',
                            get_cmd=self._get_voltage,
