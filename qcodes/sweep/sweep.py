@@ -7,10 +7,13 @@ TODO:
 """
 import itertools
 import time
+from typing import Union, Callable
 
 import numpy as np
 
 import qcodes
+from qcodes.instrument.parameter import _BaseParameter
+from qcodes.sweep.sweep_measurement import SweepMeasurement
 
 
 class ParametersTable:
@@ -599,3 +602,50 @@ def time_trace(measurement_object, interval_time, total_time):
     """
     tt_sweep = TimeTrace(interval_time, total_time)
     return szip(measurement_object, tt_sweep)
+
+
+##################################################
+# William goofing around below this line
+#
+
+
+class Sweep:
+    """
+    The class to replace the Loop
+
+    For starters, it tries to be as similar to the Loop
+    as possible, but with the sweep module behind it
+
+    This is currently just a 1D loop
+    """
+
+    def __init__(self, param_sweep: BaseSweepObject):
+        """
+        Args:
+            param_sweep: the setpoint sweep
+        """
+        self._sweep = param_sweep
+        self._run_id = None
+
+    def run(self):
+        """
+        Run the measurement
+        """
+
+        sweep_obj = self._sweep
+
+        measurement = SweepMeasurement()
+        measurement.register_sweep(sweep_obj)
+
+        with measurement.run() as datasaver:
+            for data in sweep_obj:
+                datasaver.add_result(*data.items())
+
+        self._run_id = datasaver.run_id
+
+    def __call__(self, sweep_obj):
+        self._sweep = self._sweep(sweep_obj)
+
+    @property
+    def run_id(self):
+        return self._run_id
