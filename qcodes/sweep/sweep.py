@@ -6,8 +6,9 @@ TODO:
 2) Add type hints
 """
 import itertools
-import numpy as np
 import time
+
+import numpy as np
 
 import qcodes
 
