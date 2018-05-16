@@ -30,6 +30,8 @@ class RohdeSchwarz_SGS100A(VisaInstrument):
     def __init__(self, name, address, **kwargs):
         super().__init__(name, address, **kwargs)
 
+        self._query_hardware_modules()
+
         self.add_parameter(name='frequency',
                            label='Frequency',
                            unit='Hz',
@@ -92,6 +94,29 @@ class RohdeSchwarz_SGS100A(VisaInstrument):
         self.add_function('run_self_tests', call_cmd='*TST?')
 
         self.connect_message()
+
+    def _query_hardware_modules(self):
+        """
+        Get the installed hardware module info. Should only be called once,
+        during __init__
+        """
+        traits = ['name', 'pnumber', 'revision', 'snumber']
+        hrdw = {'common': {}, 'RF': {}}
+        for n, group in enumerate(['common', 'RF']):
+            for trait in traits:    
+                rawresp = self.ask(f':SYSTem:HARDware:ASSembly{n+1}:{trait}?')
+                resp = rawresp.replace('"', '').split(',')
+                for m, v in enumerate(resp):
+                    if m+1 in hrdw[group]:
+                        hrdw[group][m+1].update({trait: v})
+                    else:
+                        hrdw[group][m+1] = {trait: v}
+
+        self._hardware_modules = hrdw
+
+    @property
+    def hardware_modules(self):
+        return self._hardware_modules
 
     def parse_on_off(self, stat):
         if stat.startswith('0'):
