@@ -131,10 +131,10 @@ class RohdeSchwarz_SGS100A(VisaInstrument):
             rawresp = self.ask(f':SYSTem:SOFTware:OPTion1:{trait}?')
             resp = rawresp.replace('"', '').split(',')
             for m, v in enumerate(resp):
-                if m+1 in hrdw[group]:
-                    hrdw[group][m+1].update({trait: v})
+                if m+1 in hrdw:
+                    hrdw[m+1].update({trait: v})
                 else:
-                    hrdw[group][m+1] = {trait: v}
+                    hrdw[m+1] = {trait: v}
         self._hardware_options = hrdw
 
     @property
