@@ -31,7 +31,8 @@ class RohdeSchwarz_SGS100A(VisaInstrument):
         super().__init__(name, address, **kwargs)
 
         self._query_hardware_modules()
-        self._query_hardware_options()
+        self._query_options(1)
+        self._query_options(2)
 
         self.add_parameter(name='frequency',
                            label='Frequency',
@@ -119,27 +120,34 @@ class RohdeSchwarz_SGS100A(VisaInstrument):
     def hardware_modules(self):
         return self._hardware_modules
 
-    def _query_hardware_options(self):
+    def _query_options(self, N: int):
         """
         Get the installed hardware options. Should only be called once,
         during __init__
         """
         traits = ['name', 'designation', 'licenses', 'expiration']
-        hrdw = {}
+        opts = {}
 
         for trait in traits:        
-            rawresp = self.ask(f':SYSTem:SOFTware:OPTion1:{trait}?')
+            rawresp = self.ask(f':SYSTem:SOFTware:OPTion{N}:{trait}?')
             resp = rawresp.replace('"', '').strip().split(',')
             for m, v in enumerate(resp):
-                if m+1 in hrdw:
-                    hrdw[m+1].update({trait: v})
+                if m+1 in opts:
+                    opts[m+1].update({trait: v})
                 else:
-                    hrdw[m+1] = {trait: v}
-        self._hardware_options = hrdw
+                    opts[m+1] = {trait: v}
+        if N == 1:
+            self._hardware_options = opts
+        if N == 2:
+            self._software_options = opts
 
     @property
     def hardware_options(self):
         return self._hardware_options
+
+    @property
+    def software_options(self):
+        return self._software_options
 
     def parse_on_off(self, stat):
         if stat.startswith('0'):
