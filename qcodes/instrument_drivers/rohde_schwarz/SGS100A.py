@@ -106,7 +106,7 @@ class RohdeSchwarz_SGS100A(VisaInstrument):
         for n, group in enumerate(['common', 'RF']):
             for trait in traits:    
                 rawresp = self.ask(f':SYSTem:HARDware:ASSembly{n+1}:{trait}?')
-                resp = rawresp.replace('"', '').split(',')
+                resp = rawresp.replace('"', '').strip().split(',')
                 for m, v in enumerate(resp):
                     if m+1 in hrdw[group]:
                         hrdw[group][m+1].update({trait: v})
@@ -129,7 +129,7 @@ class RohdeSchwarz_SGS100A(VisaInstrument):
 
         for trait in traits:        
             rawresp = self.ask(f':SYSTem:SOFTware:OPTion1:{trait}?')
-            resp = rawresp.replace('"', '').split(',')
+            resp = rawresp.replace('"', '').strip().split(',')
             for m, v in enumerate(resp):
                 if m+1 in hrdw:
                     hrdw[m+1].update({trait: v})
