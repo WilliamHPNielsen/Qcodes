@@ -31,6 +31,7 @@ class RohdeSchwarz_SGS100A(VisaInstrument):
         super().__init__(name, address, **kwargs)
 
         self._query_hardware_modules()
+        self._query_hardware_options()
 
         self.add_parameter(name='frequency',
                            label='Frequency',
@@ -117,6 +118,28 @@ class RohdeSchwarz_SGS100A(VisaInstrument):
     @property
     def hardware_modules(self):
         return self._hardware_modules
+
+    def _query_hardware_options(self):
+        """
+        Get the installed hardware options. Should only be called once,
+        during __init__
+        """
+        traits = ['name', 'designation', 'licenses', 'expiration']
+        hrdw = {}
+
+        for trait in traits:        
+            rawresp = self.ask(f':SYSTem:SOFTware:OPTion1:{trait}?')
+            resp = rawresp.replace('"', '').split(',')
+            for m, v in enumerate(resp):
+                if m+1 in hrdw[group]:
+                    hrdw[group][m+1].update({trait: v})
+                else:
+                    hrdw[group][m+1] = {trait: v}
+        self._hardware_options = hrdw
+
+    @property
+    def hardware_options(self):
+        return self._hardware_options
 
     def parse_on_off(self, stat):
         if stat.startswith('0'):
