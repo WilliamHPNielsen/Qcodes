@@ -121,7 +121,7 @@ class InstrumentBase(Metadatable, DelegateAttributes):
 
         Submodules can effectively be considered as instruments within
         the main instrument, and should at minimum be
-        snapshottable. For example, they can be used to either store
+        metadatable. For example, they can be used to either store
         logical groupings of parameters, which may or may not be
         repeated, or channel lists.
 
@@ -169,22 +169,26 @@ class InstrumentBase(Metadatable, DelegateAttributes):
             "__class__": full_class(self)
         }
 
-        snap['parameters'] = {}
-        for name, param in self.parameters.items():
-            update = update
-            if params_to_skip_update and name in params_to_skip_update:
-                update = False
-            try:
-                snap['parameters'][name] = param.snapshot(update=update)
-            except:
-                # really log this twice. Once verbose for the UI and once
-                # at lower level with more info for file based loggers
-                log.warning(f"Snapshot: Could not update parameter: "
-                            f"{name} on {self.full_name}")
-                log.info(f"Details for Snapshot of {name}:",
-                         exec_info=True)
+        snapshotable = getattr(self, 'snapshotable', True)
 
-                snap['parameters'][name] = param.snapshot(update=False)
+        if snapshotable:
+
+            snap['parameters'] = {}
+            for name, param in self.parameters.items():
+                update = update
+                if params_to_skip_update and name in params_to_skip_update:
+                    update = False
+                try:
+                    snap['parameters'][name] = param.snapshot(update=update)
+                except:
+                    # really log this twice. Once verbose for the UI and once
+                    # at lower level with more info for file based loggers
+                    log.warning(f"Snapshot: Could not update parameter: "
+                                f"{name} on {self.full_name}")
+                    log.info(f"Details for Snapshot of {name}:",
+                            exec_info=True)
+
+                    snap['parameters'][name] = param.snapshot(update=False)
         for attr in set(self._meta_attrs):
             if hasattr(self, attr):
                 snap[attr] = getattr(self, attr)

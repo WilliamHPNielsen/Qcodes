@@ -18,6 +18,11 @@ class InstrumentChannel(InstrumentBase):
 
         name (str): the name of this channel
 
+        snapshotable: whether the parameters of this class should be included
+          in its snapshot. Sometimes submodules contain parameters that it does
+          not make sense to snapshot, e.g. in the case of measurements on
+          oscilloscope traces.
+
     Attributes:
         name (str): the name of this channel
 
@@ -28,7 +33,9 @@ class InstrumentChannel(InstrumentBase):
           channel. Usually populated via ``add_function``
     """
 
-    def __init__(self, parent: Instrument, name: str, **kwargs) -> None:
+    def __init__(self, parent: Instrument, name: str,
+                 snapshotable: bool=True,
+                 **kwargs) -> None:
         # Initialize base classes of Instrument. We will overwrite what we
         # want to do in the Instrument initializer
         super().__init__(name=name, **kwargs)
@@ -36,6 +43,7 @@ class InstrumentChannel(InstrumentBase):
         self.name = "{}_{}".format(parent.name, str(name))
         self.short_name = str(name)
         self._meta_attrs = ['name']
+        self._snapshotable = snapshotable
 
         self._parent = parent
 
@@ -60,6 +68,10 @@ class InstrumentChannel(InstrumentBase):
         return self._parent.ask_raw(cmd)
 
     @property
+    def snapshotable(self) -> bool:
+        return self._snapshotable
+
+    @property
     def parent(self) -> InstrumentBase:
         return self._parent
 
@@ -72,6 +84,7 @@ class InstrumentChannel(InstrumentBase):
         name_parts = self._parent.name_parts
         name_parts.append(self.short_name)
         return name_parts
+
 
 class MultiChannelInstrumentParameter(MultiParameter):
     """
