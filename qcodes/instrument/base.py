@@ -171,24 +171,23 @@ class InstrumentBase(Metadatable, DelegateAttributes):
 
         snapshotable = getattr(self, 'snapshotable', True)
 
-        if snapshotable:
+        snap['parameters'] = {}
+        for name, param in self.parameters.items():
+            update = update
+            if ((params_to_skip_update and name in params_to_skip_update) or
+                not(snapshotable)):
+                update = False
+            try:
+                snap['parameters'][name] = param.snapshot(update=update)
+            except:
+                # really log this twice. Once verbose for the UI and once
+                # at lower level with more info for file based loggers
+                log.warning(f"Snapshot: Could not update parameter: "
+                            f"{name} on {self.full_name}")
+                log.info(f"Details for Snapshot of {name}:",
+                        exec_info=True)
 
-            snap['parameters'] = {}
-            for name, param in self.parameters.items():
-                update = update
-                if params_to_skip_update and name in params_to_skip_update:
-                    update = False
-                try:
-                    snap['parameters'][name] = param.snapshot(update=update)
-                except:
-                    # really log this twice. Once verbose for the UI and once
-                    # at lower level with more info for file based loggers
-                    log.warning(f"Snapshot: Could not update parameter: "
-                                f"{name} on {self.full_name}")
-                    log.info(f"Details for Snapshot of {name}:",
-                            exec_info=True)
-
-                    snap['parameters'][name] = param.snapshot(update=False)
+                snap['parameters'][name] = param.snapshot(update=False)
         for attr in set(self._meta_attrs):
             if hasattr(self, attr):
                 snap[attr] = getattr(self, attr)
