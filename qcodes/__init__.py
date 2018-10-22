@@ -18,7 +18,7 @@ plotlib = config.gui.plotlib
 if plotlib in {'QT', 'all'}:
     try:
         from qcodes.plots.RemotePlot import Plot
-        from qcodes.plots.qc_pyqtgraph import QtPlot
+        from qcodes.plots.pyqtgraph import QtPlot
     except Exception:
         print('pyqtgraph plotting not supported, '
               'try "from qcodes.plots.pyqtgraph import QtPlot" '
