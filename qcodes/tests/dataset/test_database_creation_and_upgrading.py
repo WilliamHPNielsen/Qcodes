@@ -23,6 +23,7 @@ from qcodes.dataset.sqlite_base import (connect,
                                         one,
                                         update_GUIDs,
                                         get_db_version_and_newest_available_version,
+                                        get_run_description,
                                         get_user_version,
                                         set_user_version,
                                         atomic_transaction,
@@ -31,6 +32,7 @@ from qcodes.dataset.sqlite_base import (connect,
                                         perform_db_upgrade_2_to_3,
                                         perform_db_upgrade_3_to_4,
                                         perform_db_upgrade_4_to_5,
+                                        perform_db_upgrade_5_to_6,
                                         _latest_available_version,
                                         is_column_in_table)
 
@@ -662,6 +664,43 @@ def test_perform_actual_upgrade_4_to_5(db_file):
 
         # finally, assert the 'snapshot' column exists in 'runs' table
         assert is_column_in_table(conn, 'runs', 'snapshot')
+
+
+def test_perform_actual_upgrade_5_to_6():
+    fixpath = os.path.join(fixturepath, 'db_files', 'version5')
+
+    db_file = 'empty.db'
+    dbname_old = os.path.join(fixpath, db_file)
+
+    if not os.path.exists(dbname_old):
+        pytest.skip("No db-file fixtures found. You can generate test db-files"
+                    " using the scripts in the "
+                    "https://github.com/QCoDeS/qcodes_generate_test_db/ repo")
+
+    with temporarily_copied_DB(dbname_old, debug=False, version=5) as conn:
+        perform_db_upgrade_5_to_6(conn)
+        assert get_user_version(conn) == 6
+
+    db_file = 'some_runs.db'
+    dbname_old = os.path.join(fixpath, db_file)
+
+    with temporarily_copied_DB(dbname_old, debug=False, version=5) as conn:
+        perform_db_upgrade_5_to_6(conn)
+        assert get_user_version(conn) == 6
+
+        no_of_runs_query = "SELECT max(run_id) FROM runs"
+        no_of_runs = one(
+            atomic_transaction(conn, no_of_runs_query), 'max(run_id)')
+        assert no_of_runs == 10
+
+        for run_id in range(1, no_of_runs + 1):
+            json_str = get_run_description(conn, run_id)
+
+            # if the upgrade was succesful, we can get back an object from
+            # the JSON string
+
+            desc = RunDescriber.from_json(json_str)
+            assert desc._version == 1
 
 
 @pytest.mark.usefixtures("empty_temp_db")
