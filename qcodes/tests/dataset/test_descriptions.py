@@ -4,8 +4,7 @@ import pytest
 
 from qcodes.dataset.descriptions import RunDescriber
 from qcodes.utils.helpers import YAML
-from qcodes.dataset.dependencies import (InterDependencies, old_to_new,
-                                         InterDependencies_, new_to_old)
+from qcodes.dataset.dependencies import (InterDependencies_, new_to_old)
 
 # pylint: disable=unused-import
 from qcodes.tests.dataset.interdeps_fixtures import (
